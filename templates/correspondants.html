@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Sonneries par correspondant – Taxi GO{% endblock %}
+
+{% block content %}
+<h1>🔔 Sonneries par correspondant <span>نغمة لكل مراسل</span></h1>
+<p class="intro-text">Chaque contact peut avoir sa propre sonnerie. Utilisez « Écouter » pour la prévisualiser.</p>
+
+<div class="correspondents-layout">
+    <section class="correspondents-card">
+        <h2>Ajouter un correspondant</h2>
+        <form method="POST" action="/correspondants" class="add-taxi-form">
+            <input type="hidden" name="action" value="add">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nom">Nom du correspondant</label>
+                    <input type="text" id="nom" name="nom" maxlength="80" placeholder="Ex. Ahmed, Société X…" required>
+                </div>
+                <div class="form-group">
+                    <label for="sonnerie">Sonnerie</label>
+                    <select id="sonnerie" name="sonnerie" required>
+                        <option value="classic">Classique (trois notes)</option>
+                        <option value="bell">Cloche</option>
+                        <option value="digital">Digital (bips)</option>
+                        <option value="soft">Doux</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="melody">Mélodie</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions-row">
+                <button type="submit" class="btn btn-primary">Ajouter</button>
+                <button type="button" class="btn btn-accent" id="preview-add" data-preview-select="sonnerie">Écouter cette sonnerie</button>
+            </div>
+        </form>
+    </section>
+
+    {% if correspondants %}
+    <section class="correspondents-card">
+        <h2>Vos correspondants</h2>
+        <div class="correspondents-list-head" aria-hidden="true">
+            <span>Nom</span>
+            <span>Sonnerie</span>
+            <span class="correspondents-actions-label">Actions</span>
+        </div>
+        {% for c in correspondants %}
+        <form method="POST" action="/correspondants" class="correspondent-row-form">
+            <input type="hidden" name="correspondent_id" value="{{ c.id }}">
+            <input type="text" name="nom" value="{{ c.nom }}" maxlength="80" required class="inline-name" aria-label="Nom">
+            <select name="sonnerie" class="sonnerie-select" data-id="{{ c.id }}" aria-label="Sonnerie">
+                <option value="classic" {% if c.sonnerie == 'classic' %}selected{% endif %}>Classique</option>
+                <option value="bell" {% if c.sonnerie == 'bell' %}selected{% endif %}>Cloche</option>
+                <option value="digital" {% if c.sonnerie == 'digital' %}selected{% endif %}>Digital</option>
+                <option value="soft" {% if c.sonnerie == 'soft' %}selected{% endif %}>Doux</option>
+                <option value="urgent" {% if c.sonnerie == 'urgent' %}selected{% endif %}>Urgent</option>
+                <option value="melody" {% if c.sonnerie == 'melody' %}selected{% endif %}>Mélodie</option>
+            </select>
+            <div class="cell-actions">
+                <button type="button" class="btn btn-accent btn-small btn-preview-row" data-preview-for="{{ c.id }}">Écouter</button>
+                <button type="submit" name="action" value="edit" class="btn btn-primary btn-small">Enregistrer</button>
+                <button type="submit" name="action" value="delete" class="btn btn-danger btn-small" onclick="return confirm('Supprimer ce correspondant ?');">Supprimer</button>
+            </div>
+        </form>
+        {% endfor %}
+    </section>
+    {% else %}
+    <p class="empty-hint">Aucun correspondant pour l’instant. Ajoutez-en un ci-dessus.</p>
+    {% endif %}
+</div>
+
+<script src="{{ url_for('static', filename='js/ringtones.js') }}"></script>
+<script>
+(function () {
+    function valFromSelect(sel) {
+        if (!sel) return 'classic';
+        return sel.value || 'classic';
+    }
+    document.getElementById('preview-add') && document.getElementById('preview-add').addEventListener('click', function () {
+        var id = this.getAttribute('data-preview-select');
+        var s = document.getElementById(id);
+        if (window.playRingtone) window.playRingtone(valFromSelect(s));
+    });
+    document.querySelectorAll('.btn-preview-row').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-preview-for');
+            var row = document.querySelector('select.sonnerie-select[data-id="' + id + '"]');
+            if (window.playRingtone) window.playRingtone(valFromSelect(row));
+        });
+    });
+})();
+</script>
+{% endblock %}

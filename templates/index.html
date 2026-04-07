@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>🚕 Grands taxis inter-villes <span>لائحة الطاكسيات</span></h1>
+
+{% if session.get('user_id') %}
+<p class="sonneries-banner"><a href="/correspondants">🔔 Sonneries par correspondant</a> — une tonalité différente pour chaque contact.</p>
+{% endif %}
+
+{% if error %}
+<div class="error-msg">{{ error }}</div>
+{% endif %}
+
+{% if taxis %}
+<ul class="trajet-list">
+    {% for taxi in taxis %}
+    <li class="trajet-card">
+        <div class="trajet-route">
+            <span class="trajet-villes">
+                {{ taxi.ville_depart }} <span class="trajet-arrow">→</span> {{ taxi.ville_arrivee }}
+            </span>
+        </div>
+        <div class="trajet-info">
+            <span class="trajet-places">{{ taxi.places }} place{{ 's' if taxi.places > 1 else '' }} dispo</span>
+            <a href="/reserver/{{ taxi.id }}" class="btn btn-primary">حجز | Réserver</a>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Aucun trajet disponible pour le moment. Soyez le premier à proposer un trajet !</p>
+{% endif %}
+
+{% if session.get('role') == 'chauffeur' %}
+<hr style="margin: 2rem 0; border: none; border-top: 1px solid #E0E0E0;">
+<h2>➕ إضافة طاكسي جديد | Ajouter un trajet</h2>
+<form method="POST" action="/ajouter_taxi" class="add-taxi-form">
+    <div class="form-row">
+        <div class="form-group">
+            <label>Ville de départ | مدينة الانطلاق</label>
+            <select name="ville_depart" required>
+                <option value="">Choisir...</option>
+                <option value="Casablanca">Casablanca الدار البيضاء</option>
+                <option value="Rabat">Rabat الرباط</option>
+                <option value="Fes">Fès فاس</option>
+                <option value="Marrakech">Marrakech مراكش</option>
+                <option value="Tangier">Tanger طنجة</option>
+                <option value="Agadir">Agadir أكادير</option>
+                <option value="Oujda">Oujda وجدة</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Ville d'arrivée | مدينة الوصول</label>
+            <select name="ville_arrivee" required>
+                <option value="">Choisir...</option>
+                <option value="Casablanca">Casablanca الدار البيضاء</option>
+                <option value="Rabat">Rabat الرباط</option>
+                <option value="Fes">Fès فاس</option>
+                <option value="Marrakech">Marrakech مراكش</option>
+                <option value="Tangier">Tanger طنجة</option>
+                <option value="Agadir">Agadir أكادير</option>
+                <option value="Oujda">Oujda وجدة</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Places | البلايص</label>
+            <input type="number" name="places" placeholder="6" min="1" max="15" required>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">إضافة | Ajouter</button>
+</form>
+{% endif %}
+{% endblock %}

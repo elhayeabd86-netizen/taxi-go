@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Taxi GO – Grands taxis Maroc{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <a href="/" class="logo">
+            🚕 Taxi GO <span>طاكسي جو</span>
+        </a>
+        <nav class="nav-links">
+            {% if session.get('user_id') %}
+                <a href="/passager">🧍 Passager</a>
+                {% if session.get('role') == 'chauffeur' %}
+                    <a href="/chauffeur">🧑‍✈️ Chauffeur</a>
+                {% endif %}
+                {% if session.get('role') == 'admin' %}
+                    <a href="/admin">🛠️ Admin</a>
+                {% endif %}
+                <a href="/correspondants">🔔 Sonneries</a>
+                <span class="user-badge">{{ session.get('role', '') }}: {{ session.get('user_id') }}</span>
+                <a href="/logout">تسجيل الخروج | Déconnexion</a>
+            {% else %}
+                <a href="/login">تسجيل الدخول | Connexion</a>
+                <a href="/register">التسجيل | Inscription</a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

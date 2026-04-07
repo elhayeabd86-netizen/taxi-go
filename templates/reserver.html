@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="reservation-card">
+    <h1>🚕 حجز طاكسي | Réserver</h1>
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+    <p class="reservation-route">{{ taxi.ville_depart }} → {{ taxi.ville_arrivee }}</p>
+    <p class="reservation-places">Places disponibles : {{ taxi.places }}</p>
+    {% if estimation %}
+    <p class="reservation-places">Estimation officielle (1 siège) : {{ estimation }} MAD</p>
+    {% endif %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label>Votre nom | سمية ديالك</label>
+            <input type="text" name="nom_client" placeholder="Nom complet" required>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Sièges | البلايص</label>
+                <input type="number" name="seats" min="1" max="6" value="1" required>
+            </div>
+            <div class="form-group">
+                <label>Paiement | الأداء</label>
+                <select name="payment_method" required>
+                    <option value="cash">Cash (à bord)</option>
+                    <option value="wallet">Wallet mobile</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
+            تأكيد الحجز | Confirmer
+        </button>
+    </form>
+</div>
+{% endblock %}

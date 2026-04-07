@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Chauffeur – Taxi GO{% endblock %}
+
+{% block content %}
+<h1>🧑‍✈️ Interface Chauffeur <span>الطابور والوثائق</span></h1>
+
+<section class="card">
+    <h2>Gestion de la file d'attente (pointage Mahatta)</h2>
+    <form method="POST" action="/chauffeur" class="add-taxi-form">
+        <input type="hidden" name="action" value="pointer">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Ville de départ</label>
+                <select name="ville_depart" required>
+                    <option value="">Choisir…</option>
+                    {% for v in ["Casablanca","Rabat","Fes","Marrakech","Tangier","Agadir","Oujda","Settat"] %}
+                        <option value="{{ v }}">{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ville d'arrivée</label>
+                <select name="ville_arrivee" required>
+                    <option value="">Choisir…</option>
+                    {% for v in ["Casablanca","Rabat","Fes","Marrakech","Tangier","Agadir","Oujda","Settat"] %}
+                        <option value="{{ v }}">{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Pointer et créer une course (6 sièges)</button>
+    </form>
+</section>
+
+{% if taxis %}
+<h2 style="margin-top: 1.25rem;">Mes taxis</h2>
+<ul class="trajet-list">
+    {% for taxi in taxis %}
+    <li class="trajet-card">
+        <div class="trajet-route">
+            <span class="trajet-villes">
+                {{ taxi.ville_depart }} <span class="trajet-arrow">→</span> {{ taxi.ville_arrivee }}
+            </span>
+            <div style="margin-top: .45rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+                <span class="pill pill-ok">File #{{ taxi.queue_num or '—' }}</span>
+                <span class="pill pill-ok">Statut: {{ taxi.status }}</span>
+                <span class="pill {% if taxi.places == 0 %}pill-danger{% else %}pill-ok{% endif %}">Sièges restants: {{ taxi.places }}</span>
+            </div>
+        </div>
+        <div class="trajet-info">
+            <span class="trajet-places">{{ taxi.places }} / {{ taxi.places_total or 6 }} sièges restants</span>
+            <button type="button" class="btn btn-accent" onclick="navigator.clipboard.writeText(location.origin + '/api/taxi/{{ taxi.id }}/status')">Copier lien suivi</button>
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <h3 style="margin:0 0 .5rem 0;">Autorisation de sortie (documents)</h3>
+            <form method="POST" action="/chauffeur" enctype="multipart/form-data" class="add-taxi-form">
+                <input type="hidden" name="action" value="upload_docs">
+                <input type="hidden" name="taxi_id" value="{{ taxi.id }}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Permis de confiance</label>
+                        <input type="file" name="permis_confiance" accept=".pdf,.png,.jpg,.jpeg">
+                        {% if taxi.permis_confiance_path %}
+                        <div style="margin-top:.25rem;"><a href="/{{ taxi.permis_confiance_path }}">Voir fichier</a></div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Autorisation sortie périmètre urbain</label>
+                        <input type="file" name="autorisation_sortie" accept=".pdf,.png,.jpg,.jpeg">
+                        {% if taxi.autorisation_sortie_path %}
+                        <div style="margin-top:.25rem;"><a href="/{{ taxi.autorisation_sortie_path }}">Voir fichier</a></div>
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Uploader</button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-top:.75rem;">
+            <h3 style="margin:0 0 .5rem 0;">Position & statut (suivi passager)</h3>
+            <form method="POST" action="/chauffeur" class="add-taxi-form">
+                <input type="hidden" name="action" value="maj_position">
+                <input type="hidden" name="taxi_id" value="{{ taxi.id }}">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" step="any" name="lat" value="{{ taxi.current_lat or '' }}" placeholder="Ex: 33.5731">
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" step="any" name="lng" value="{{ taxi.current_lng or '' }}" placeholder="Ex: -7.5898">
+                    </div>
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select name="status">
+                            {% for s in ["en_attente","en_route","termine"] %}
+                                <option value="{{ s }}" {% if taxi.status == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Mettre à jour</button>
+            </form>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p style="margin-top: 1rem;">Aucun taxi créé pour l’instant.</p>
+{% endif %}
+{% endblock %}

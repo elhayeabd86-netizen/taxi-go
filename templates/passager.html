@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Passager – Taxi GO{% endblock %}
+
+{% block content %}
+<h1>🧍 Interface Passager <span>البحث والحجز</span></h1>
+
+<section class="card">
+    <h2>Recherche de trajet</h2>
+    <form method="GET" action="/passager" class="add-taxi-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Ville de départ</label>
+                <select name="ville_depart">
+                    <option value="">Toutes</option>
+                    {% for v in ["Casablanca","Rabat","Fes","Marrakech","Tangier","Agadir","Oujda","Settat"] %}
+                        <option value="{{ v }}" {% if ville_depart == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ville de destination</label>
+                <select name="ville_arrivee">
+                    <option value="">Toutes</option>
+                    {% for v in ["Casablanca","Rabat","Fes","Marrakech","Tangier","Agadir","Oujda","Settat"] %}
+                        <option value="{{ v }}" {% if ville_arrivee == v %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Rechercher</button>
+    </form>
+</section>
+
+{% if taxis %}
+<ul class="trajet-list" style="margin-top: 1rem;">
+    {% for taxi in taxis %}
+    <li class="trajet-card">
+        <div class="trajet-route">
+            <span class="trajet-villes">
+                {{ taxi.ville_depart }} <span class="trajet-arrow">→</span> {{ taxi.ville_arrivee }}
+            </span>
+            <div style="margin-top: .45rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+                <span class="pill pill-ok">Statut: {{ taxi.status }}</span>
+                {% if taxi.queue_num %}<span class="pill pill-ok">File #{{ taxi.queue_num }}</span>{% endif %}
+                {% if taxi.agrement_verifie %}
+                  <span class="pill pill-ok">✅ Agrément vérifié</span>
+                {% else %}
+                  <span class="pill pill-warn">⚠️ Agrément en attente</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="trajet-info">
+            <span class="trajet-places">
+                {{ taxi.places }} / {{ taxi.places_total or 6 }} sièges dispo
+            </span>
+            <a href="/reserver/{{ taxi.id }}" class="btn btn-primary">Réserver</a>
+            <button type="button" class="btn btn-accent" onclick="refreshStatus({{ taxi.id }})">Suivi</button>
+        </div>
+        <div id="status-{{ taxi.id }}" class="muted" style="margin-top:.5rem; font-size:.92rem;"></div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p style="margin-top: 1rem;">Aucun trajet trouvé.</p>
+{% endif %}
+
+<script>
+async function refreshStatus(id) {
+  const el = document.getElementById('status-' + id);
+  el.textContent = 'Chargement…';
+  try {
+    const r = await fetch('/api/taxi/' + id + '/status');
+    const d = await r.json();
+    el.textContent = `Position: ${d.lat ?? '—'}, ${d.lng ?? '—'} | Occupées: ${d.places_occupees}/${d.places_total}`;
+  } catch (e) {
+    el.textContent = 'Erreur de suivi.';
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <h1>تسجيل الدخول | Connexion</h1>
+        {% if error %}
+        <div class="error-msg">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="form-group">
+                <label>Nom d'utilisateur | سمية ديالك</label>
+                <input type="text" name="nom" placeholder="Votre nom" required>
+            </div>
+            <button type="submit" class="btn btn-primary">دخول | Connexion</button>
+        </form>
+        <p class="auth-link">Pas encore inscrit ? <a href="/register">S'inscrire</a></p>
+    </div>
+</div>
+{% endblock %}

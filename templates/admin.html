@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Admin – Taxi GO{% endblock %}
+
+{% block content %}
+<h1>🛠️ Interface Administrateur <span>التحقق والمسارات</span></h1>
+
+<section class="card">
+    <h2>Gestion des agréments (taxis + documents)</h2>
+    {% if taxis %}
+    <ul class="trajet-list">
+        {% for t in taxis %}
+        <li class="trajet-card">
+            <div class="trajet-route">
+                <span class="trajet-villes">{{ t.ville_depart }} <span class="trajet-arrow">→</span> {{ t.ville_arrivee }}</span>
+                <div style="margin-top: .45rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+                    <span class="pill pill-ok">Chauffeur ID: {{ t.chauffeur_id or '—' }}</span>
+                    <span class="pill pill-ok">File #{{ t.queue_num or '—' }}</span>
+                    <span class="pill pill-ok">Statut: {{ t.status }}</span>
+                </div>
+                <div class="muted" style="margin-top: .45rem; font-size: .95rem;">
+                    Permis: {% if t.permis_confiance_path %}<a href="/{{ t.permis_confiance_path }}">Voir</a>{% else %}—{% endif %}
+                    | Autorisation: {% if t.autorisation_sortie_path %}<a href="/{{ t.autorisation_sortie_path }}">Voir</a>{% else %}—{% endif %}
+                </div>
+            </div>
+            <div class="trajet-info">
+                <span class="trajet-places">
+                    Agrément: {% if t.agrement_verifie %}<strong>✅ Vérifié</strong>{% else %}<strong>⚠️ Non vérifié</strong>{% endif %}
+                </span>
+                <form method="POST" action="/admin" style="display:inline;">
+                    <input type="hidden" name="action" value="toggle_agrement">
+                    <input type="hidden" name="taxi_id" value="{{ t.id }}">
+                    <button class="btn btn-primary" type="submit">Basculer</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Aucun taxi.</p>
+    {% endif %}
+</section>
+
+<section class="card" style="margin-top:1rem;">
+    <h2>Base de données des trajets (routes fixes)</h2>
+    <form method="POST" action="/admin" class="add-taxi-form">
+        <input type="hidden" name="action" value="add_route">
+        <div class="form-row">
+            <div class="form-group">
+                <label>Départ</label>
+                <input type="text" name="ville_depart" placeholder="Casablanca" required>
+            </div>
+            <div class="form-group">
+                <label>Arrivée</label>
+                <input type="text" name="ville_arrivee" placeholder="Settat" required>
+            </div>
+            <div class="form-group">
+                <label>Prix / siège (MAD)</label>
+                <input type="number" step="0.01" name="prix_par_siege" placeholder="25" required>
+            </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Ajouter route</button>
+    </form>
+
+    {% if routes %}
+    <div style="margin-top:.75rem;">
+        <div class="correspondents-list-head" aria-hidden="true">
+            <span>Route</span>
+            <span>Prix</span>
+            <span class="correspondents-actions-label">Actions</span>
+        </div>
+        {% for r in routes %}
+        <form method="POST" action="/admin" class="correspondent-row-form">
+            <input type="hidden" name="action" value="toggle_route">
+            <input type="hidden" name="route_id" value="{{ r.id }}">
+            <div style="padding:.35rem 0;">{{ r.ville_depart }} → {{ r.ville_arrivee }}</div>
+            <div style="padding:.35rem 0;">{{ r.prix_par_siege }} MAD / siège</div>
+            <div class="cell-actions">
+                <button class="btn btn-accent btn-small" type="submit">{% if r.actif %}Désactiver{% else %}Activer{% endif %}</button>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>Aucune route enregistrée.</p>
+    {% endif %}
+</section>
+{% endblock %}
