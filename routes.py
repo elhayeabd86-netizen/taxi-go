@@ -5,10 +5,19 @@ from models import db, Taxi, Reservation, User, Correspondent, FixedRoute
 
 app = Flask(__name__)
 app.secret_key = 'secret123'  # باش نخزنوا session
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///taxi.db'
+
+# Create a path to the /tmp directory
+# This is the ONLY writable folder on Vercel
+db_path = os.path.join('/tmp', 'taxi.db')
+
+# Force SQLite to use the /tmp path
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+
+# This prevents Flask from trying to create the /instance folder
+app.instance_path = '/tmp'
 
 db.init_app(app)
 
