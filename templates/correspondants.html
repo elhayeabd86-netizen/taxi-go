@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Correspondants - Taxi GO{% endblock %}
+
+{% block content %}
+<h1>Correspondants</h1>
+<p>Ajoutez, modifiez ou supprimez vos correspondants de notification.</p>
+
+{% if correspondants %}
+<table class="simple-table">
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Sonnerie</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in correspondants %}
+        <tr>
+            <td>{{ c.nom }}</td>
+            <td>{{ c.sonnerie }}</td>
+            <td>
+                <form method="post" style="display:inline-block">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="correspondent_id" value="{{ c.id }}">
+                    <button type="submit">Supprimer</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucun correspondant enregistré.</p>
+{% endif %}
+
+<h2>Ajouter un correspondant</h2>
+<form method="post">
+    <input type="hidden" name="action" value="add">
+    <div>
+        <label>Nom:</label>
+        <input type="text" name="nom" required>
+    </div>
+    <div>
+        <label>Sonnerie:</label>
+        <select name="sonnerie">
+            <option value="classic">Classic</option>
+            <option value="bell">Bell</option>
+            <option value="digital">Digital</option>
+            <option value="soft">Soft</option>
+            <option value="urgent">Urgent</option>
+            <option value="melody">Melody</option>
+        </select>
+    </div>
+    <button type="submit">Ajouter</button>
+</form>
+{% endblock %}

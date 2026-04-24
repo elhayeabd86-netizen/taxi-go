@@ -1,23 +1,29 @@
 import os
 from flask import Flask, render_template, request, redirect, session, jsonify
 from sqlalchemy import inspect, text
-from models import db, Taxi, Reservation, User, FixedRoute
+from werkzeug.security import check_password_hash, generate_password_hash
+from models import db, Taxi, Reservation, User, FixedRoute, Correspondent
 
-app = Flask(__name__, instance_path='/tmp')
-app.secret_key = 'secret123'  # باش نخزنوا session
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'secret123')  # باش نخزنوا session
 
-# Create a path to the /tmp directory
-# This is the ONLY writable folder on Vercel
-db_path = os.path.join('/tmp', 'taxi.db')
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    # Use an externally hosted database for Vercel/production deployments.
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Fallback for local development when no external database is configured.
+    local_instance_path = os.environ.get('FLASK_INSTANCE_PATH') or (
+        os.path.join(app.root_path, 'instance') if os.name == 'nt' else '/tmp'
+    )
+    os.makedirs(local_instance_path, exist_ok=True)
+    db_path = os.path.join(local_instance_path, 'taxi.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.instance_path = local_instance_path
 
-# Force SQLite to use the /tmp path
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
-
-# This prevents Flask from trying to create the /instance folder
-app.instance_path = '/tmp'
 
 db.init_app(app)
 
@@ -115,6 +121,12 @@ def _sanitize_filename(name: str) -> str:
     out = ''.join(keep).strip('._')
     return out or "file"
 
+ALLOWED_UPLOAD_EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp'}
+
+def _allowed_upload_file(filename: str) -> bool:
+    ext = os.path.splitext(filename)[1].lower()
+    return ext in ALLOWED_UPLOAD_EXTENSIONS
+
 
 def _get_official_price_per_seat(ville_depart: str, ville_arrivee: str):
     route = FixedRoute.query.filter_by(ville_depart=ville_depart, ville_arrivee=ville_arrivee, actif=True).first()
@@ -186,16 +198,26 @@ def chauffeur():
             if taxi and taxi.chauffeur_id == uid:
                 permis = request.files.get('permis_confiance')
                 autor = request.files.get('autorisation_sortie')
+                invalid = False
                 if permis and permis.filename:
-                    fn = _sanitize_filename(permis.filename)
-                    path = os.path.join(app.config['UPLOAD_FOLDER'], f"permis_{uid}_{taxi.id}_{fn}")
-                    permis.save(path)
-                    taxi.permis_confiance_path = os.path.relpath(path, app.root_path).replace("\\", "/")
+                    if _allowed_upload_file(permis.filename):
+                        fn = _sanitize_filename(permis.filename)
+                        path = os.path.join(app.config['UPLOAD_FOLDER'], f"permis_{uid}_{taxi.id}_{fn}")
+                        permis.save(path)
+                        taxi.permis_confiance_path = os.path.relpath(path, app.root_path).replace("\\", "/")
+                    else:
+                        invalid = True
                 if autor and autor.filename:
-                    fn = _sanitize_filename(autor.filename)
-                    path = os.path.join(app.config['UPLOAD_FOLDER'], f"autor_{uid}_{taxi.id}_{fn}")
-                    autor.save(path)
-                    taxi.autorisation_sortie_path = os.path.relpath(path, app.root_path).replace("\\", "/")
+                    if _allowed_upload_file(autor.filename):
+                        fn = _sanitize_filename(autor.filename)
+                        path = os.path.join(app.config['UPLOAD_FOLDER'], f"autor_{uid}_{taxi.id}_{fn}")
+                        autor.save(path)
+                        taxi.autorisation_sortie_path = os.path.relpath(path, app.root_path).replace("\\", "/")
+                    else:
+                        invalid = True
+                if invalid:
+                    my_taxis = Taxi.query.filter_by(chauffeur_id=uid).order_by(Taxi.created_at.desc()).all()
+                    return render_template('chauffeur.html', taxis=my_taxis, error="Type de fichier non autorisé. Seuls les PDF et images sont acceptés.")
                 db.session.commit()
         elif action == 'maj_position':
             taxi_id = request.form.get('taxi_id', type=int)
@@ -225,9 +247,18 @@ def admin():
         if not admin_code_verified:
             admin_code = (request.form.get('admin_code') or '').strip()
             user = User.query.get(_current_user_id())
-            if user and user.code and user.code == admin_code:
-                session['admin_code_verified'] = True
-                admin_code_verified = True
+            if user and user.code:
+                if check_password_hash(user.code, admin_code):
+                    session['admin_code_verified'] = True
+                    admin_code_verified = True
+                elif user.code == admin_code:
+                    # Migrate plain-text stored codes to a secure hash.
+                    user.code = generate_password_hash(admin_code)
+                    db.session.commit()
+                    session['admin_code_verified'] = True
+                    admin_code_verified = True
+                else:
+                    return render_template('admin.html', error="Code administrateur incorrect / رمز المسؤول غير صحيح")
             else:
                 return render_template('admin.html', error="Code administrateur incorrect / رمز المسؤول غير صحيح")
         
@@ -323,7 +354,8 @@ def register():
         if role == 'admin' and not code:
             return render_template('register.html', error="Code administrateur requis / رمز المسؤول مطلوب")
         
-        user = User(nom=nom, role=role, email=email, code=code if code else None)
+        hashed_code = generate_password_hash(code) if code else None
+        user = User(nom=nom, role=role, email=email, code=hashed_code)
         db.session.add(user)
         db.session.commit()
         session['user_id'] = user.id

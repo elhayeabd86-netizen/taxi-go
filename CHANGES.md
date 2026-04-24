@@ -14,10 +14,13 @@ Enhanced the Taxi GO application with better role separation, admin code protect
 
 ### 2. **Backend Routes** (`routes.py`)
 - ✅ Updated database schema to include new fields
+- ✅ Switched database configuration to support external hosts via `DATABASE_URL` for Vercel/PostgreSQL deployments
 - ✅ **Admin Code Protection**: 
   - Admins must verify with a code each time they access `/admin`
-  - Code is set during registration and is password-protected
+  - Codes are hashed with Werkzeug before storage
+  - Plain-text legacy admin codes are migrated to a secure hash on first successful verification
   - Session flag `admin_code_verified` tracks verification status
+- ✅ Added upload file validation to allow only images and PDFs for driver documents
 - ✅ **Driver Interface** (`/chauffeur`):
   - Added time input fields (departure and arrival times)
   - Times are stored and displayed in taxi listings
@@ -119,12 +122,16 @@ Enhanced the Taxi GO application with better role separation, admin code protect
 ## Security Notes
 
 ✅ **Admin Code Protection**: 
-- Admin code is stored in the database (plain text for now - consider hashing in production)
+- Admin codes are now hashed with Werkzeug before being stored in the database
+- Plain-text legacy admin codes are upgraded on first successful verification
 - Code is verified on each admin panel access
-- Session-based verification
+- Session-based verification is still used for `/admin`
+
+✅ **Upload Security**:
+- Driver document uploads now only accept image and PDF extensions
+- This prevents arbitrary scripts or executable files from being saved under `static/uploads`
 
 ⚠️ **Future Improvements**:
-- Consider hashing admin codes with bcrypt
 - Add session timeout for admin access
 - Add audit log for admin actions
 - Implement email verification for user registration

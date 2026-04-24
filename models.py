@@ -43,7 +43,15 @@ class User(db.Model):
     nom = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), nullable=True)
     role = db.Column(db.String(20), nullable=False)  # client | chauffeur | admin
-    code = db.Column(db.String(255), nullable=True)  # Password/code (especially for admin)
+    code = db.Column(db.String(255), nullable=True)  # Hashed admin code or password
+
+
+class Correspondent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    nom = db.Column(db.String(80), nullable=False)
+    sonnerie = db.Column(db.String(32), nullable=False, default='classic')
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 
 class FixedRoute(db.Model):

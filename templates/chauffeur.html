@@ -5,6 +5,12 @@
 {% block content %}
 <h1>🧑‍✈️ Interface Chauffeur <span>الطابور والوثائق</span></h1>
 
+{% if error %}
+<div class="alert alert-danger" style="margin-top:1rem; padding:1rem; border:1px solid #dc3545; background:#f8d7da; color:#842029; border-radius:0.5rem;">
+    {{ error }}
+</div>
+{% endif %}
+
 <section class="card">
     <h2>Gestion de la file d'attente (pointage Mahatta)</h2>
     <form method="POST" action="/chauffeur" class="add-taxi-form">
